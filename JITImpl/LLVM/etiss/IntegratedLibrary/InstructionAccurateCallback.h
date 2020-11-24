@@ -40,44 +40,40 @@
 
 */
 
-#define ETISS_LIBNAME LLVMJIT
-#include "etiss/helper/JITLibrary.h"
+#ifndef ETISS_PLUGIN_InstructionAccurateCallback_H_
+#define ETISS_PLUGIN_InstructionAccurateCallback_H_
 
+#include "etiss/Plugin.h"
 
-#include "LLVMJIT.h"
+#include <fstream>
 
-#include <iostream>
-
-// implement etiss library interface
-extern "C"
+namespace etiss
 {
 
-    const char *LLVMJIT_versionInfo() { return "3.4.2for0.4"; }
+namespace plugin
+{
 
-    // implement version function
-    ETISS_LIBRARYIF_VERSION_FUNC_IMPL
+/**
+        writes the value of a field before each instruction
 
-    unsigned LLVMJIT_countJIT() { return 1; }
-    const char *LLVMJIT_nameJIT(unsigned index)
-    {
-        switch (index)
-        {
-        case 0:
-            return "LLVMJIT";
-        default:
-            return 0;
-        }
-    }
-    etiss::JIT *LLVMJIT_createJIT(unsigned index, std::map<std::string, std::string> options)
-    {
-        switch (index)
-        {
-        case 0:
-            return new etiss::LLVMJIT();
-        default:
-            return 0;
-        }
-    }
+*/
+class InstructionAccurateCallback : public etiss::TranslationPlugin
+{
+  public:
+    InstructionAccurateCallback();
+    virtual ~InstructionAccurateCallback();
+    virtual void initCodeBlock(etiss::CodeBlock &block) const;
+    virtual void finalizeInstrSet(etiss::instr::ModedInstructionSet &) const;
 
-    void LLVMJIT_deleteJIT(etiss::JIT *o) { delete o; }
-}
+  protected:
+    virtual std::string _getPluginName() const;
+
+  public:
+    void call();
+};
+
+} // namespace plugin
+
+} // namespace etiss
+
+#endif

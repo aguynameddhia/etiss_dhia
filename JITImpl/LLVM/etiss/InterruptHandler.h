@@ -1,4 +1,4 @@
-/*
+/**
 
         @copyright
 
@@ -34,50 +34,82 @@
 
         </pre>
 
-        @author Chair of Electronic Design Automation, TUM
+        @author Marc Greim <marc.greim@mytum.de>, Chair of Electronic Design Automation, TUM
+
+        @date July 28, 2014
 
         @version 0.1
 
 */
+/**
+        @file
 
-#define ETISS_LIBNAME LLVMJIT
-#include "etiss/helper/JITLibrary.h"
+        @brief interrupt checking and signaling
 
+        @detail
 
-#include "LLVMJIT.h"
+*/
 
-#include <iostream>
+#ifndef ETISS_INCLUDE_INTERRUPTHANDLER_H_
+#define ETISS_INCLUDE_INTERRUPTHANDLER_H_
 
-// implement etiss library interface
-extern "C"
+#include "etiss/CPUArch.h"
+#include "etiss/InterruptVector.h"
+#include "etiss/LibraryInterface.h"
+#include "etiss/Plugin.h"
+#include "etiss/jit/types.h"
+#include <list>
+#include <mutex>
+#include <set>
+#include <vector>
+
+namespace etiss
 {
 
-    const char *LLVMJIT_versionInfo() { return "3.4.2for0.4"; }
+/**
+        interrupt types supported by the default implementation
+*/
+enum InterruptType
+{
 
-    // implement version function
-    ETISS_LIBRARYIF_VERSION_FUNC_IMPL
+    EDGE_TRIGGERED = 1,
+    LEVEL_TRIGGERED
 
-    unsigned LLVMJIT_countJIT() { return 1; }
-    const char *LLVMJIT_nameJIT(unsigned index)
-    {
-        switch (index)
-        {
-        case 0:
-            return "LLVMJIT";
-        default:
-            return 0;
-        }
-    }
-    etiss::JIT *LLVMJIT_createJIT(unsigned index, std::map<std::string, std::string> options)
-    {
-        switch (index)
-        {
-        case 0:
-            return new etiss::LLVMJIT();
-        default:
-            return 0;
-        }
-    }
+};
 
-    void LLVMJIT_deleteJIT(etiss::JIT *o) { delete o; }
-}
+/**
+        @brief class that handles interrupt signaling and checking. functions
+   are declared virtual to allow customization
+*/
+class InterruptHandler : public etiss::CoroutinePlugin
+{
+  public:
+    InterruptHandler(etiss::InterruptVector *interruptVector, std::shared_ptr<etiss::CPUArch> arch,
+                     InterruptType itype = EDGE_TRIGGERED, bool sync = true);
+    virtual ~InterruptHandler();
+    /**
+            @brief set the state of a line at a given time. changes will not be applied until flush(2) with a time_ps
+       value equal or greater than this time_ps value is called
+    */
+    virtual void setLine(unsigned line, bool state, etiss::uint64 time_ps);
+    /**
+            @brief apply interrupt changes to the InterruptVector
+            @return etiss::RETURNCODE::INTERRUPT if an interrupt should occur
+    */
+    virtual etiss::int32 execute();
+    virtual std::string _getPluginName() const;
+
+  protected:
+    const InterruptType itype_;
+    std::mutex mu_;
+    const bool sync_;
+    InterruptVector *const vector_;
+    /** list: (time , (line ,state) ) */
+    std::list<std::pair<etiss::uint64, std::pair<unsigned, bool>>> pending_;
+    const std::shared_ptr<etiss::CPUArch> cpuarch_;
+    std::set<unsigned> ed_raised_;
+    bool empty_;
+};
+} // namespace etiss
+
+#endif

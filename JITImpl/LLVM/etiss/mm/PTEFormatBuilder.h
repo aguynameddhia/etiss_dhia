@@ -1,4 +1,4 @@
-/*
+/**
 
         @copyright
 
@@ -34,50 +34,89 @@
 
         </pre>
 
-        @author Chair of Electronic Design Automation, TUM
+        @author Aote Jin <aote.jin@tum.de>, Chair of Electronic Design Automation, TUM
+
+        @date June 24, 2018
 
         @version 0.1
 
 */
 
-#define ETISS_LIBNAME LLVMJIT
-#include "etiss/helper/JITLibrary.h"
-
-
-#include "LLVMJIT.h"
+#ifndef ETISS_INCLUDE_MM_PTEFORMATBUILDER_H_
+#define ETISS_INCLUDE_MM_PTEFORMATBUILDER_H_
 
 #include <iostream>
+#include <map>
+#include <memory>
 
-// implement etiss library interface
-extern "C"
+#include "etiss/mm/PTEFormat.h"
+
+namespace etiss
+{
+namespace mm
 {
 
-    const char *LLVMJIT_versionInfo() { return "3.4.2for0.4"; }
-
-    // implement version function
-    ETISS_LIBRARYIF_VERSION_FUNC_IMPL
-
-    unsigned LLVMJIT_countJIT() { return 1; }
-    const char *LLVMJIT_nameJIT(unsigned index)
+/**
+ *	@brief Sigleton builder utility to build up customized PTE format
+ */
+class PTEFormatBuilder
+{
+  public:
+    /**
+     *	@brief Get the singleton instance
+     */
+    static PTEFormatBuilder &Instance()
     {
-        switch (index)
-        {
-        case 0:
-            return "LLVMJIT";
-        default:
-            return 0;
-        }
-    }
-    etiss::JIT *LLVMJIT_createJIT(unsigned index, std::map<std::string, std::string> options)
-    {
-        switch (index)
-        {
-        case 0:
-            return new etiss::LLVMJIT();
-        default:
-            return 0;
-        }
+        static std::shared_ptr<PTEFormatBuilder> builder(new PTEFormatBuilder((PTEFormat::Instance())));
+        return *builder;
     }
 
-    void LLVMJIT_deleteJIT(etiss::JIT *o) { delete o; }
-}
+    /**
+     *	@brief Add mandatory bit field, Physical Page Number (PPN), for PTE
+     */
+    PTEFormatBuilder &AddPPNBitField(uint32_t begin, uint32_t end)
+    {
+        format_.AddBitField("PPN", begin, end);
+        return *this;
+    }
+
+    /**
+     *	@brief Add mandatory bit field for page size offset (Not included in PTE neither
+     *   		in PTE format)
+     */
+    PTEFormatBuilder &AddPageOffset(uint32_t begin, uint32_t end)
+    {
+        format_.AddBitField("PAGEOFFSET", begin, end);
+        return *this;
+    }
+
+    /**
+     *	@brief Add optional bit field for protection flag in PTE
+     */
+    PTEFormatBuilder &AddFlag(std::string name, uint32_t begin, uint32_t end)
+    {
+        format_.AddBitField(name, begin, end);
+        return *this;
+    }
+
+    /**
+     *	@brief Add optional bit field for protection flag in PTE
+     */
+    PTEFormatBuilder &AddFlag(std::string name, uint32_t pos)
+    {
+        format_.AddBitField(name, pos, pos);
+        return *this;
+    }
+
+  private:
+    PTEFormatBuilder(PTEFormat &format) : format_(format) {}
+
+    PTEFormat &format_;
+
+    friend class PTEFormat;
+};
+
+} // namespace mm
+} // namespace etiss
+
+#endif

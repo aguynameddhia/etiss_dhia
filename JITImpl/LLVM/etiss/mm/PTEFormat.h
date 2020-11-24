@@ -1,4 +1,4 @@
-/*
+/**
 
         @copyright
 
@@ -34,50 +34,73 @@
 
         </pre>
 
-        @author Chair of Electronic Design Automation, TUM
+        @author Aote Jin <aote.jin@tum.de>, Chair of Electronic Design Automation, TUM
+
+        @date June 24, 2018
 
         @version 0.1
 
 */
 
-#define ETISS_LIBNAME LLVMJIT
-#include "etiss/helper/JITLibrary.h"
-
-
-#include "LLVMJIT.h"
-
+#ifndef ETISS_INCLUDE_MM_PTEFORMAT_H_
+#define ETISS_INCLUDE_MM_PTEFORMAT_H_
 #include <iostream>
+#include <map>
+#include <memory>
+#include <string>
 
-// implement etiss library interface
-extern "C"
+namespace etiss
+{
+namespace mm
 {
 
-    const char *LLVMJIT_versionInfo() { return "3.4.2for0.4"; }
+/**
+        @brief Singleton to represent specific PTE format, every PTE uses this singleton
+        to parse raw PTE value into PPN and protection flags, read/write PPN or flags.
+*/
 
-    // implement version function
-    ETISS_LIBRARYIF_VERSION_FUNC_IMPL
+typedef std::map<std::string, std::pair<uint32_t, uint32_t>> PTEFormatMap;
 
-    unsigned LLVMJIT_countJIT() { return 1; }
-    const char *LLVMJIT_nameJIT(unsigned index)
+class PTEFormat
+{
+  public:
+    /**
+     *	@brief Get the singleton instance
+     */
+    static PTEFormat &Instance()
     {
-        switch (index)
-        {
-        case 0:
-            return "LLVMJIT";
-        default:
-            return 0;
-        }
-    }
-    etiss::JIT *LLVMJIT_createJIT(unsigned index, std::map<std::string, std::string> options)
-    {
-        switch (index)
-        {
-        case 0:
-            return new etiss::LLVMJIT();
-        default:
-            return 0;
-        }
+        static std::shared_ptr<PTEFormat> instance = std::shared_ptr<PTEFormat>(new PTEFormat());
+        return *instance;
     }
 
-    void LLVMJIT_deleteJIT(etiss::JIT *o) { delete o; }
-}
+    /**
+     *	@brief Called only by PTEFormatBuilder
+     *
+     * 	@see   etiss::mm::PTEFormatBuilder
+     */
+    void AddBitField(std::string name, uint32_t begin, uint32_t end);
+
+    /**
+     *	@brief Dump the details of the bit field according to given name
+     */
+    void DumpBitFild(std::string name);
+
+    /**
+     *	@brief Dump the details of the whole PTE format
+     */
+    void Dump();
+
+    uint32_t GetPTELength() const { return pte_len_; }
+
+    PTEFormatMap &GetFormatMap() { return format_map_; }
+
+  private:
+    PTEFormat() : pte_len_(0) {}
+    PTEFormatMap format_map_;
+    uint32_t pte_len_;
+};
+
+} // namespace mm
+} // namespace etiss
+
+#endif

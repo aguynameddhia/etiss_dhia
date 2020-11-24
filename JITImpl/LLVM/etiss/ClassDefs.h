@@ -40,44 +40,33 @@
 
 */
 
-#define ETISS_LIBNAME LLVMJIT
-#include "etiss/helper/JITLibrary.h"
+#ifndef ETISS_INCLUDE_CLASSDEFS_H_
+#define ETISS_INCLUDE_CLASSDEFS_H_
 
-
-#include "LLVMJIT.h"
-
-#include <iostream>
-
-// implement etiss library interface
-extern "C"
+namespace etiss
 {
 
-    const char *LLVMJIT_versionInfo() { return "3.4.2for0.4"; }
+class Plugin;
+class CPUArch;
+class CPUCore;
 
-    // implement version function
-    ETISS_LIBRARYIF_VERSION_FUNC_IMPL
+class TranslationPlugin;
+class CoroutinePlugin;
+class SystemWrapperPlugin;
+class RegisterDevicePlugin;
+class InterruptListenerPlugin;
 
-    unsigned LLVMJIT_countJIT() { return 1; }
-    const char *LLVMJIT_nameJIT(unsigned index)
-    {
-        switch (index)
-        {
-        case 0:
-            return "LLVMJIT";
-        default:
-            return 0;
-        }
-    }
-    etiss::JIT *LLVMJIT_createJIT(unsigned index, std::map<std::string, std::string> options)
-    {
-        switch (index)
-        {
-        case 0:
-            return new etiss::LLVMJIT();
-        default:
-            return 0;
-        }
-    }
+class Translation;
 
-    void LLVMJIT_deleteJIT(etiss::JIT *o) { delete o; }
-}
+namespace instr
+{
+
+class BitArray;
+class BitArrayRange;
+class VariableInstructionSet;
+class ModedInstructionSet;
+
+} // namespace instr
+
+} // namespace etiss
+#endif

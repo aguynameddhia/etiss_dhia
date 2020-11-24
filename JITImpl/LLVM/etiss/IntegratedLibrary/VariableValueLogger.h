@@ -40,44 +40,56 @@
 
 */
 
-#define ETISS_LIBNAME LLVMJIT
-#include "etiss/helper/JITLibrary.h"
+#ifndef ETISS_PLUGIN_VVLOGGER_H_
+#define ETISS_PLUGIN_VVLOGGER_H_
 
+#include "etiss/Plugin.h"
 
-#include "LLVMJIT.h"
+#include <fstream>
 
-#include <iostream>
-
-// implement etiss library interface
-extern "C"
+namespace etiss
 {
 
-    const char *LLVMJIT_versionInfo() { return "3.4.2for0.4"; }
+namespace plugin
+{
 
-    // implement version function
-    ETISS_LIBRARYIF_VERSION_FUNC_IMPL
+/**
+        writes the value of a field before each instruction
 
-    unsigned LLVMJIT_countJIT() { return 1; }
-    const char *LLVMJIT_nameJIT(unsigned index)
-    {
-        switch (index)
-        {
-        case 0:
-            return "LLVMJIT";
-        default:
-            return 0;
-        }
-    }
-    etiss::JIT *LLVMJIT_createJIT(unsigned index, std::map<std::string, std::string> options)
-    {
-        switch (index)
-        {
-        case 0:
-            return new etiss::LLVMJIT();
-        default:
-            return 0;
-        }
-    }
+*/
+class VariableValueLogger : public etiss::TranslationPlugin
+{
+  public:
+    VariableValueLogger(const std::string &field, const std::string &file,
+                        std::function<void(std::ostream &out, const std::string &field, uint64_t value)> writer);
+    virtual void initCodeBlock(etiss::CodeBlock &block) const;
+    virtual void finalizeInstrSet(etiss::instr::ModedInstructionSet &) const;
 
-    void LLVMJIT_deleteJIT(etiss::JIT *o) { delete o; }
-}
+  public:
+    /** @brief Calls the function specified with writer_ to log the variable
+     */
+    void writeValue();
+
+  protected:
+    /** @brief returns the name of the Plugin.
+     */
+    virtual std::string _getPluginName() const;
+
+  private:
+    std::string field_; ///< Name of the field to log
+    /** @brief Function which specifies the outout format.
+     *
+     * Default output: <field>,<value>\n
+     * @param Reference to file stream for writing data.
+     * @param Name of the field to log.
+     * @param Value of the field to log.
+     */
+    std::function<void(std::ostream &out, const std::string &field, uint64_t value)> writer_;
+    std::ofstream out_; ///< file stream for logger.
+};
+
+} // namespace plugin
+
+} // namespace etiss
+
+#endif

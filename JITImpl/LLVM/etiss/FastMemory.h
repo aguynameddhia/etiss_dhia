@@ -1,4 +1,4 @@
-/*
+/**
 
         @copyright
 
@@ -34,50 +34,33 @@
 
         </pre>
 
-        @author Chair of Electronic Design Automation, TUM
+        @author Marc Greim <marc.greim@mytum.de>, Chair of Electronic Design Automation, TUM
+
+        @date September 2, 2014
 
         @version 0.1
 
 */
+/**
+        @file
 
-#define ETISS_LIBNAME LLVMJIT
-#include "etiss/helper/JITLibrary.h"
+        @brief provides a fast memory implementation for ETISS
 
+*/
 
-#include "LLVMJIT.h"
+#include "etiss/jit/System.h"
+#include <memory>
 
-#include <iostream>
-
-// implement etiss library interface
-extern "C"
+namespace etiss
 {
 
-    const char *LLVMJIT_versionInfo() { return "3.4.2for0.4"; }
+/**
+        creates a very fast ETISS_System structure.
+        segmentation faults are possible if the read access happens outside of the range 0 to size-1.
+        writing to areas that have been translated results in undefined behaviour.
+        instruction write access return etiss::RETURNCODE::IBUS_WRITE_ERROR.
+        time synchronization is disabled but may be changed if a custom handle is not required;
+*/
+std::shared_ptr<ETISS_System> createFastMemory(size_t size);
 
-    // implement version function
-    ETISS_LIBRARYIF_VERSION_FUNC_IMPL
-
-    unsigned LLVMJIT_countJIT() { return 1; }
-    const char *LLVMJIT_nameJIT(unsigned index)
-    {
-        switch (index)
-        {
-        case 0:
-            return "LLVMJIT";
-        default:
-            return 0;
-        }
-    }
-    etiss::JIT *LLVMJIT_createJIT(unsigned index, std::map<std::string, std::string> options)
-    {
-        switch (index)
-        {
-        case 0:
-            return new etiss::LLVMJIT();
-        default:
-            return 0;
-        }
-    }
-
-    void LLVMJIT_deleteJIT(etiss::JIT *o) { delete o; }
-}
+} // namespace etiss

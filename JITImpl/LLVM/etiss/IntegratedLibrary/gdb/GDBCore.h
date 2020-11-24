@@ -1,4 +1,4 @@
-/*
+/**
 
         @copyright
 
@@ -34,50 +34,82 @@
 
         </pre>
 
-        @author Chair of Electronic Design Automation, TUM
+        @author Marc Greim <marc.greim@mytum.de>, Chair of Electronic Design Automation, TUM
+
+        @date September 2, 2014
 
         @version 0.1
 
 */
+/**
+        @file
 
-#define ETISS_LIBNAME LLVMJIT
-#include "etiss/helper/JITLibrary.h"
+        @brief
+
+        @detail
 
 
-#include "LLVMJIT.h"
 
-#include <iostream>
 
-// implement etiss library interface
-extern "C"
+*/
+#ifndef ETISS_INCLUDE_GDB_GDBCORE_H_
+#define ETISS_INCLUDE_GDB_GDBCORE_H_
+
+#include "etiss/jit/CPU.h"
+#include <string>
+
+namespace etiss
 {
 
-    const char *LLVMJIT_versionInfo() { return "3.4.2for0.4"; }
+namespace plugin
+{
 
-    // implement version function
-    ETISS_LIBRARYIF_VERSION_FUNC_IMPL
+namespace gdb
+{
 
-    unsigned LLVMJIT_countJIT() { return 1; }
-    const char *LLVMJIT_nameJIT(unsigned index)
-    {
-        switch (index)
-        {
-        case 0:
-            return "LLVMJIT";
-        default:
-            return 0;
-        }
-    }
-    etiss::JIT *LLVMJIT_createJIT(unsigned index, std::map<std::string, std::string> options)
-    {
-        switch (index)
-        {
-        case 0:
-            return new etiss::LLVMJIT();
-        default:
-            return 0;
-        }
-    }
+/**
+        @brief provides to architecture dependent registers as defined by gdb
 
-    void LLVMJIT_deleteJIT(etiss::JIT *o) { delete o; }
-}
+        @detail gdb requires a predefined archtecture specific list of registers. Information about this list is
+   provided by this class
+*/
+class GDBCore
+{
+  public:
+    virtual ~GDBCore();
+    /**
+            @brief the returned string identifies the register at the given index as defined by gdb. the returned string
+       must match the get/setRegisterXX() functions of etiss::CPUArch
+    */
+    virtual std::string mapRegister(unsigned index);
+    /**
+            @brief returns the index of the given register name in the list of registers as defined by gdb. max return
+       INVALIDMAPPING if the passed name is not in the list
+    */
+    virtual unsigned mapRegister(std::string name);
+    /**
+            @brief returns the number of registers in the gdb defined register list
+    */
+    virtual unsigned mappedRegisterCount();
+    /**
+            @brief returns true if the values are expected to be little endian
+    */
+    virtual bool isLittleEndian();
+    /**
+            @brief allows to calculate the index of the instruction to be executed for breakpoint checks. returns
+       cpu->instructionPointer by default.
+            @detail the OR1K architecture uses this to account for an invalid instruction pointer in case of a delay
+       slot instruction
+    */
+    virtual etiss::uint64 getInstructionPointer(ETISS_CPU *cpu);
+
+  public:
+    static const unsigned INVALIDMAPPING = (unsigned)-1;
+};
+
+} // namespace gdb
+
+} // namespace plugin
+} // namespace etiss
+
+#endif

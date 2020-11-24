@@ -1,4 +1,4 @@
-/*
+/**
 
         @copyright
 
@@ -34,50 +34,41 @@
 
         </pre>
 
-        @author Chair of Electronic Design Automation, TUM
+        @author Marc Greim <marc.greim@mytum.de>, Chair of Electronic Design Automation, TUM
+
+        @date July 28, 2014
 
         @version 0.1
 
 */
+/**
+        @file
 
-#define ETISS_LIBNAME LLVMJIT
-#include "etiss/helper/JITLibrary.h"
+        @brief contains a simple plugin to print instructions
 
+        @detail
 
-#include "LLVMJIT.h"
+*/
+#include "etiss/Plugin.h"
 
-#include <iostream>
-
-// implement etiss library interface
-extern "C"
+namespace etiss
 {
 
-    const char *LLVMJIT_versionInfo() { return "3.4.2for0.4"; }
+namespace plugin
+{
 
-    // implement version function
-    ETISS_LIBRARYIF_VERSION_FUNC_IMPL
+/**
+        @brief a simple plugin that prints the instruction and address when an instruction is executed
+*/
+class PrintInstruction : public etiss::TranslationPlugin
+{
+  public:
+    virtual void finalizeInstrSet(etiss::instr::ModedInstructionSet &) const;
+    virtual void initCodeBlock(etiss::CodeBlock &block) const;
+    virtual std::string _getPluginName() const;
+    virtual void *getPluginHandle();
+};
 
-    unsigned LLVMJIT_countJIT() { return 1; }
-    const char *LLVMJIT_nameJIT(unsigned index)
-    {
-        switch (index)
-        {
-        case 0:
-            return "LLVMJIT";
-        default:
-            return 0;
-        }
-    }
-    etiss::JIT *LLVMJIT_createJIT(unsigned index, std::map<std::string, std::string> options)
-    {
-        switch (index)
-        {
-        case 0:
-            return new etiss::LLVMJIT();
-        default:
-            return 0;
-        }
-    }
+} // namespace plugin
 
-    void LLVMJIT_deleteJIT(etiss::JIT *o) { delete o; }
-}
+} // namespace etiss

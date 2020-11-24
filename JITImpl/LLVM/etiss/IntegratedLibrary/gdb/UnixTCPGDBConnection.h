@@ -1,4 +1,4 @@
-/*
+/**
 
         @copyright
 
@@ -34,50 +34,71 @@
 
         </pre>
 
-        @author Chair of Electronic Design Automation, TUM
+        @author Marc Greim <marc.greim@mytum.de>, Chair of Electronic Design Automation, TUM
+
+        @date September 2, 2014
 
         @version 0.1
 
 */
+/**
+        @file
 
-#define ETISS_LIBNAME LLVMJIT
-#include "etiss/helper/JITLibrary.h"
+        @brief
+
+        @detail
 
 
-#include "LLVMJIT.h"
 
-#include <iostream>
 
-// implement etiss library interface
-extern "C"
+*/
+
+#ifndef ETISS_INCLUDE_GDB_UNIXTCPGDBCONNECTION_H_
+#define ETISS_INCLUDE_GDB_UNIXTCPGDBCONNECTION_H_
+#include "etiss/config.h"
+
+#if ETISS_USE_POSIX_SOCKET
+
+#include "etiss/IntegratedLibrary/gdb/GDBConnection.h"
+#include "etiss/jit/types.h"
+
+namespace etiss
 {
 
-    const char *LLVMJIT_versionInfo() { return "3.4.2for0.4"; }
+namespace plugin
+{
 
-    // implement version function
-    ETISS_LIBRARYIF_VERSION_FUNC_IMPL
+namespace gdb
+{
 
-    unsigned LLVMJIT_countJIT() { return 1; }
-    const char *LLVMJIT_nameJIT(unsigned index)
-    {
-        switch (index)
-        {
-        case 0:
-            return "LLVMJIT";
-        default:
-            return 0;
-        }
-    }
-    etiss::JIT *LLVMJIT_createJIT(unsigned index, std::map<std::string, std::string> options)
-    {
-        switch (index)
-        {
-        case 0:
-            return new etiss::LLVMJIT();
-        default:
-            return 0;
-        }
-    }
+/**
+        @brief implementation of TCP socket + server socket for gdb communication
+*/
+class UnixTCPGDBConnection : public Connection
+{
+  public:
+    UnixTCPGDBConnection(unsigned port = 2222);
+    virtual ~UnixTCPGDBConnection();
+    virtual bool available();
+    bool _available(bool block);
+    virtual std::string rcv();
+    virtual bool snd(std::string answer);
 
-    void LLVMJIT_deleteJIT(etiss::JIT *o) { delete o; }
-}
+  private:
+    int socket_;
+    bool valid_;
+    int active_;
+    bool active_valid_;
+    etiss::uint8 buffer_[1024];
+    unsigned buffer_pos_;
+};
+
+} // namespace gdb
+
+} // namespace plugin
+
+} // namespace etiss
+
+#endif // ETISS_USE_POSIX_SOCKET
+
+#endif

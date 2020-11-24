@@ -40,44 +40,63 @@
 
 */
 
-#define ETISS_LIBNAME LLVMJIT
-#include "etiss/helper/JITLibrary.h"
+#ifndef ETISS_PLUGIN_VIRTUALSTRUCTMEMORY_H
+#define ETISS_PLUGIN_VIRTUALSTRUCTMEMORY_H
 
+#include "etiss/System.h"
+#include "etiss/VirtualStruct.h"
 
-#include "LLVMJIT.h"
-
-#include <iostream>
-
-// implement etiss library interface
-extern "C"
+namespace etiss
+{
+namespace plugin
 {
 
-    const char *LLVMJIT_versionInfo() { return "3.4.2for0.4"; }
+/**
+        allows to read/write to a virtual structure as if it is a memory. Any mapped field is addressed as little
+   endian.
+*/
+class VirtualStructMemory : public SimpleSystem
+{
+  public:
+    VirtualStructMemory(const etiss::VirtualStruct &str,
+                        std::function<uint64_t(etiss::VirtualStruct::Field *, bool & /*dontMount*/)> mountPoint,
+                        bool littleendian = true);
+    virtual ~VirtualStructMemory();
 
-    // implement version function
-    ETISS_LIBRARYIF_VERSION_FUNC_IMPL
+    /**
+        @attention all mapped fields are addressed as little endian
+    */
+    virtual bool read(bool debug, ETISS_CPU *cpu, etiss::uint64 addr, etiss::uint8 *buf, etiss::uint32 len);
+    /**
+        @attention all mapped fields are addressed as little endian
+    */
+    virtual bool write(bool debug, ETISS_CPU *cpu, etiss::uint64 addr, etiss::uint8 *buf, etiss::uint32 len);
 
-    unsigned LLVMJIT_countJIT() { return 1; }
-    const char *LLVMJIT_nameJIT(unsigned index)
+    const etiss::VirtualStruct &mem_;
+
+	typedef std::map<uint64_t, std::pair<etiss::VirtualStruct::Field * /*field*/, size_t /*offset*/>> mapping_t;
+    /**
+        returns the internal mapping
+    */
+    inline const mapping_t &getMapping()
     {
-        switch (index)
-        {
-        case 0:
-            return "LLVMJIT";
-        default:
-            return 0;
-        }
+        return memmap_;
     }
-    etiss::JIT *LLVMJIT_createJIT(unsigned index, std::map<std::string, std::string> options)
-    {
-        switch (index)
-        {
-        case 0:
-            return new etiss::LLVMJIT();
-        default:
-            return 0;
-        }
-    }
+    std::set<etiss::VirtualStruct::Field *> getMappedFields();
 
-    void LLVMJIT_deleteJIT(etiss::JIT *o) { delete o; }
-}
+    inline uint64_t startAddr() { return startaddr_; }
+    inline uint64_t endAddr() { return endaddr_; }
+
+  protected:
+  private:
+    uint64_t startaddr_;
+    /// excluded
+    uint64_t endaddr_;
+    mapping_t memmap_;
+    std::list<std::shared_ptr<VirtualStruct::Field>> references;
+};
+
+} // namespace plugin
+} // namespace etiss
+
+#endif // ETISS_PLUGIN_VIRTUALSTRUCTMEMORY_H

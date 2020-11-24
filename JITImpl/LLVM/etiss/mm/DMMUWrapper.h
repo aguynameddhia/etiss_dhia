@@ -1,4 +1,4 @@
-/*
+/**
 
         @copyright
 
@@ -34,50 +34,68 @@
 
         </pre>
 
-        @author Chair of Electronic Design Automation, TUM
+        @author Aote Jin <aote.jin@tum.de>, Chair of Electronic Design Automation, TUM
+
+        @date June 24, 2018
 
         @version 0.1
 
 */
+/**
+        @file
 
-#define ETISS_LIBNAME LLVMJIT
-#include "etiss/helper/JITLibrary.h"
+        @brief Wrapper class to wrap aroud data MMU
 
 
-#include "LLVMJIT.h"
+*/
 
-#include <iostream>
+#ifndef ETISS_INCLUDE_MM_DMMUWrapper_WRAPPER_H_
+#define ETISS_INCLUDE_MM_DMMUWrapper_WRAPPER_H_
 
-// implement etiss library interface
-extern "C"
+#include "etiss/ETISS.h"
+#include "etiss/Plugin.h"
+#include "etiss/mm/MMU.h"
+
+#include <sstream>
+
+namespace etiss
+{
+namespace mm
 {
 
-    const char *LLVMJIT_versionInfo() { return "3.4.2for0.4"; }
+class DMMUWrapper : public etiss::SystemWrapperPlugin
+{
 
-    // implement version function
-    ETISS_LIBRARYIF_VERSION_FUNC_IMPL
+  public:
+    explicit DMMUWrapper(std::shared_ptr<MMU> mmu);
 
-    unsigned LLVMJIT_countJIT() { return 1; }
-    const char *LLVMJIT_nameJIT(unsigned index)
-    {
-        switch (index)
-        {
-        case 0:
-            return "LLVMJIT";
-        default:
-            return 0;
-        }
-    }
-    etiss::JIT *LLVMJIT_createJIT(unsigned index, std::map<std::string, std::string> options)
-    {
-        switch (index)
-        {
-        case 0:
-            return new etiss::LLVMJIT();
-        default:
-            return 0;
-        }
-    }
+    virtual ~DMMUWrapper() {}
 
-    void LLVMJIT_deleteJIT(etiss::JIT *o) { delete o; }
-}
+    /**
+            @brief SystemWrapperPlugin interface to wrap around original ETISS_System
+    */
+    ETISS_System *wrap(ETISS_CPU *cpu, ETISS_System *system);
+
+    /**
+            @brief SystemWrapperPlugin interface to unwrap original ETISS_System
+    */
+    ETISS_System *unwrap(ETISS_CPU *cpu, ETISS_System *system);
+
+    std::shared_ptr<MMU> mmu_;
+
+  protected:
+    std::string _getPluginName() const;
+};
+
+struct DMMUWrapperSystem
+{
+
+    struct ETISS_System sys;
+    DMMUWrapper *this_;
+    ETISS_System *orig;
+};
+
+} // namespace mm
+} // namespace etiss
+
+#endif

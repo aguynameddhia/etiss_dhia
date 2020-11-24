@@ -1,4 +1,4 @@
-/*
+/**
 
         @copyright
 
@@ -34,50 +34,68 @@
 
         </pre>
 
-        @author Chair of Electronic Design Automation, TUM
+        @author Marc Greim <marc.greim@mytum.de>, Chair of Electronic Design Automation, TUM
+
+        @date July 28, 2014
 
         @version 0.1
 
 */
+/**
+        @file
 
-#define ETISS_LIBNAME LLVMJIT
-#include "etiss/helper/JITLibrary.h"
+        @brief simple test system implementation
 
+*/
 
-#include "LLVMJIT.h"
+#ifndef ETISS_INCLUDE_DEBUGSYSTEM_H_
+#define ETISS_INCLUDE_DEBUGSYSTEM_H_
+#include "etiss/System.h"
+#include <fstream>
 
-#include <iostream>
-
-// implement etiss library interface
-extern "C"
+namespace etiss
 {
 
-    const char *LLVMJIT_versionInfo() { return "3.4.2for0.4"; }
+/**
+        @brief simple etiss:System implementation for testing
+*/
+class DebugSystem : public System
+{
+  public:
+    DebugSystem(uint32_t rom_start, uint32_t rom_size, uint32_t ram_start, uint32_t ram_size);
+    // memory access
+    etiss::int32 iread(ETISS_CPU *cpu, etiss::uint64 addr, etiss::uint32 len);
+    etiss::int32 iwrite(ETISS_CPU *cpu, etiss::uint64 addr, etiss::uint8 *buf, etiss::uint32 len);
+    etiss::int32 dread(ETISS_CPU *cpu, etiss::uint64 addr, etiss::uint8 *buf, etiss::uint32 len);
+    etiss::int32 dwrite(ETISS_CPU *cpu, etiss::uint64 addr, etiss::uint8 *buf, etiss::uint32 len);
+    etiss::int32 dbg_read(etiss::uint64 addr, etiss::uint8 *buf, etiss::uint32 len);
+    etiss::int32 dbg_write(etiss::uint64 addr, etiss::uint8 *buf, etiss::uint32 len);
+    // sync time
+    void syncTime(ETISS_CPU *cpu);
+    /**
+            @brief loads a binary image from a file to the given address
+    */
+    // bool load(etiss::uint64 addr,const char * file);
+    bool loadRom(const char *file);
+    bool loadRam(const char *file);
+    // void swapEndian(unsigned align = 4);
 
-    // implement version function
-    ETISS_LIBRARYIF_VERSION_FUNC_IMPL
+  private:
+    // etiss::uint8 * rom_mem;
+    // etiss::uint8 * ram_mem;
+    std::vector<uint8> ram_mem{};
+    std::vector<uint8> rom_mem{};
+    uint32_t _rom_start;
+    uint32_t _ram_start;
+    bool _print_ibus_access;
+    bool _print_dbus_access;
+    bool _print_dbgbus_access;
+    bool _print_to_file;
+    int message_max_cnt;
 
-    unsigned LLVMJIT_countJIT() { return 1; }
-    const char *LLVMJIT_nameJIT(unsigned index)
-    {
-        switch (index)
-        {
-        case 0:
-            return "LLVMJIT";
-        default:
-            return 0;
-        }
-    }
-    etiss::JIT *LLVMJIT_createJIT(unsigned index, std::map<std::string, std::string> options)
-    {
-        switch (index)
-        {
-        case 0:
-            return new etiss::LLVMJIT();
-        default:
-            return 0;
-        }
-    }
+    std::ofstream trace_file_dbus_;
+};
 
-    void LLVMJIT_deleteJIT(etiss::JIT *o) { delete o; }
-}
+} // namespace etiss
+
+#endif

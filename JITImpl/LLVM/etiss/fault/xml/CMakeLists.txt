@@ -28,78 +28,24 @@
 #	POSSIBILITY OF SUCH DAMAGE.
 #
 #
-#	Author: Chair of Electronic Design Automation, TUM
+#	Author: Marc Greim <marc.greim@mytum.de>, Chair of Electronic Design Automation, TUM
 #
 #	Version 0.1
 #
 
-
-PROJECT(LLVMJIT)
-
-IF(NOT DEFINED ENV{LLVM_DIR})
-    SET(ENV{LLVM_DIR} "/opt/clang+llvm-11.0.0-x86_64-linux-gnu-ubuntu-20.04")
-ENDIF()
-
-FIND_PACKAGE(LLVM 11 CONFIG)
-
-IF(LLVM_FOUND)
-    MESSAGE("Using LLVM_DIR: ${LLVM_DIR}")
-    MESSAGE("LLVM Version: ${LLVM_VERSION}")
-
-    LINK_DIRECTORIES(${LLVM_LIBRARY_DIRS})
-    ADD_DEFINITIONS(${LLVM_DEFINITIONS})
-    llvm_map_components_to_libnames(LLVM_LIBS
-        option
-        object
-        profiledata
-        support
-        core
-        mc
-        bitreader
-        MCParser
-        BinaryFormat
-        ExecutionEngine
-        Target
-        MCJIT
-        orcjit
-        X86CodeGen
-        X86AsmParser
-        Interpreter
-        passes
-        coverage
-        ObjCARCOpts
-        LTO
-        Coroutines
-    )
+### recurse into sub directories
+unset(LOCAL_SUBDIRS)
+FILE(GLOB LOCAL_SUBDIRS ${CMAKE_CURRENT_LIST_DIR}/*)
+foreach(subdir ${LOCAL_SUBDIRS})
+	if(IS_DIRECTORY ${subdir})
+		add_subdirectory(${subdir})
+	endif()
+endforeach()
 
 
-    FILE(GLOB_RECURSE CLANG_INTERNAL_HEADERS ${LLVM_LIBRARY_DIRS}/clang/${LLVM_VERSION}/include/*.h)
-    FOREACH(JITFILE ${CLANG_INTERNAL_HEADERS})
-        STRING(REGEX REPLACE ".*/lib/clang/.*/include/(.*)" "clang_stdlib/\\1" TargetFile ${JITFILE})
-        list(APPEND CLANG_JITFILES "${TargetFile},${JITFILE}")
-    ENDFOREACH()
-    RegisterJITFiles("${CLANG_JITFILES}")
+unset(LOCAL_SOURCE1)
+unset(LOCAL_SOURCE2)
+FILE(GLOB LOCAL_SOURCE1 RELATIVE ${ETISS_ROOT_DIR} *.h)
+FILE(GLOB LOCAL_SOURCE2 RELATIVE ${ETISS_ROOT_DIR} *.hpp)
 
-    ADD_LIBRARY(${PROJECT_NAME} SHARED
-        LLVMJITLIB.cpp
-        src/LLVMJIT.cpp
-    )
-    ETISSPlugin(${PROJECT_NAME})
-    TARGET_LINK_LIBRARIES(${PROJECT_NAME} PUBLIC
-        -Wl,--start-group
-        ${LLVM_LIBS}
-        clangFrontend
-        clangCodeGen
-        clangLex
-        clangSerialization
-        clangAST
-        clangBasic
-        clangSema
-        clangEdit
-        clangAnalysis
-        clangDriver
-        clangParse
-        -Wl,--end-group
-    )
-    TARGET_INCLUDE_DIRECTORIES(${PROJECT_NAME} PUBLIC include ${LLVM_INCLUDE_DIRS})
-ENDIF()
+set(ETISS_HEADER ${ETISS_HEADER} ${LOCAL_SOURCE1} ${LOCAL_SOURCE2} PARENT_SCOPE)

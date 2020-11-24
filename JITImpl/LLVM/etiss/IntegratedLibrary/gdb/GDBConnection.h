@@ -1,4 +1,4 @@
-/*
+/**
 
         @copyright
 
@@ -34,50 +34,96 @@
 
         </pre>
 
-        @author Chair of Electronic Design Automation, TUM
+        @author Marc Greim <marc.greim@mytum.de>, Chair of Electronic Design Automation, TUM
+
+        @date September 2, 2014
 
         @version 0.1
 
 */
+/**
+        @file
 
-#define ETISS_LIBNAME LLVMJIT
-#include "etiss/helper/JITLibrary.h"
+        @brief
+
+        @detail
 
 
-#include "LLVMJIT.h"
 
-#include <iostream>
 
-// implement etiss library interface
-extern "C"
+*/
+
+#ifndef ETISS_INCLUDE_GDB_GDBCONNECTION_H_
+#define ETISS_INCLUDE_GDB_GDBCONNECTION_H_
+
+#include <string>
+
+namespace etiss
 {
 
-    const char *LLVMJIT_versionInfo() { return "3.4.2for0.4"; }
+namespace plugin
+{
 
-    // implement version function
-    ETISS_LIBRARYIF_VERSION_FUNC_IMPL
+namespace gdb
+{
 
-    unsigned LLVMJIT_countJIT() { return 1; }
-    const char *LLVMJIT_nameJIT(unsigned index)
-    {
-        switch (index)
-        {
-        case 0:
-            return "LLVMJIT";
-        default:
-            return 0;
-        }
-    }
-    etiss::JIT *LLVMJIT_createJIT(unsigned index, std::map<std::string, std::string> options)
-    {
-        switch (index)
-        {
-        case 0:
-            return new etiss::LLVMJIT();
-        default:
-            return 0;
-        }
-    }
+class Connection;
 
-    void LLVMJIT_deleteJIT(etiss::JIT *o) { delete o; }
-}
+/**
+        @brief implements gdb's packet protocol
+*/
+class PacketProtocol
+{
+    friend class Connection;
+
+  private:
+    PacketProtocol(Connection &connection);
+
+  public:
+    virtual bool available(bool block = false);
+    virtual std::string rcv(bool &isnotification);
+    virtual bool snd(std::string answer, bool isnotification);
+
+  private:
+    virtual bool _available(bool block);
+    virtual void tryReadPacket();
+    std::string buffer;
+    std::string command;
+    bool command_isnotification;
+    Connection &con;
+    bool cfg_noack_;
+};
+
+/**
+        @brief interface for gdb connections. implemented by UnixTCPGDBConnection.h . use PacketProtocol
+   (Connection::getPacketProtocol) for communication with gdb
+*/
+class Connection
+{
+    friend class PacketProtocol;
+
+  public:
+    Connection();
+    virtual ~Connection();
+    virtual bool available() = 0;
+    virtual std::string rcv() = 0;
+    virtual bool snd(std::string answer) = 0;
+    virtual PacketProtocol &getPacketProtocol();
+    virtual bool isRelyable();
+    virtual bool pendingBREAK();
+    virtual void clearBREAK();
+
+  protected:
+    bool pending_break_;
+
+  private:
+    PacketProtocol packproc_;
+};
+
+} // namespace gdb
+
+} // namespace plugin
+
+} // namespace etiss
+
+#endif

@@ -94,8 +94,6 @@
 #include <string>
 #include <vector>
 
-class OrcJit;
-
 namespace etiss
 {
 
@@ -130,9 +128,7 @@ class LLVMJIT : public etiss::JIT
 
   private:
     llvm::LLVMContext context_;
-    //clang::CompilerInstance clang_;
-    
-    OrcJit *orcJit_ = nullptr;
+    clang::CompilerInstance clang_;
 };
 
 } // namespace etiss

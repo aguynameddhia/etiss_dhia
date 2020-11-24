@@ -1,4 +1,4 @@
-/*
+/**
 
         @copyright
 
@@ -34,50 +34,44 @@
 
         </pre>
 
-        @author Chair of Electronic Design Automation, TUM
+        @author Marc Greim <marc.greim@mytum.de>, Chair of Electronic Design Automation, TUM
+
+        @date July 28, 2014
 
         @version 0.1
 
 */
+/**
+        @file
 
-#define ETISS_LIBNAME LLVMJIT
-#include "etiss/helper/JITLibrary.h"
+        @brief defines the functions needed for a library that provides etiss::CPUArch implementations
+
+        @see IntegratedLibrary.h shows how this header should be used
+
+        @detail
 
 
-#include "LLVMJIT.h"
 
-#include <iostream>
 
-// implement etiss library interface
+*/
+#ifndef ETISS_INCLUDE_HELPER_PLUGINLIBRARY_H_
+#define ETISS_INCLUDE_HELPER_PLUGINLIBRARY_H_
+
+#include "etiss/helper/Misc.h"
+
+#include "etiss/Plugin.h"
+
 extern "C"
 {
 
-    const char *LLVMJIT_versionInfo() { return "3.4.2for0.4"; }
-
-    // implement version function
-    ETISS_LIBRARYIF_VERSION_FUNC_IMPL
-
-    unsigned LLVMJIT_countJIT() { return 1; }
-    const char *LLVMJIT_nameJIT(unsigned index)
-    {
-        switch (index)
-        {
-        case 0:
-            return "LLVMJIT";
-        default:
-            return 0;
-        }
-    }
-    etiss::JIT *LLVMJIT_createJIT(unsigned index, std::map<std::string, std::string> options)
-    {
-        switch (index)
-        {
-        case 0:
-            return new etiss::LLVMJIT();
-        default:
-            return 0;
-        }
-    }
-
-    void LLVMJIT_deleteJIT(etiss::JIT *o) { delete o; }
+    ETISS_PLUGIN_EXPORT unsigned etiss_helper_merge(
+        ETISS_LIBNAME, _countPlugin)(); ///< function to get number of plugin types supplied by a library
+    ETISS_PLUGIN_EXPORT const char *etiss_helper_merge(ETISS_LIBNAME, _namePlugin)(
+        unsigned index); ///< function to get the name of a plugin type at index
+    ETISS_PLUGIN_EXPORT etiss::Plugin *etiss_helper_merge(ETISS_LIBNAME, _createPlugin)(
+        unsigned index,
+        std::map<std::string, std::string> options); ///< create new instance of the plugin type at index
+    ETISS_PLUGIN_EXPORT void etiss_helper_merge(ETISS_LIBNAME, _deletePlugin)(etiss::Plugin *); ///< delete instance
 }
+
+#endif

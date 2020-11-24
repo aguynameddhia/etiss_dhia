@@ -1,4 +1,4 @@
-/*
+/**
 
         @copyright
 
@@ -34,50 +34,58 @@
 
         </pre>
 
-        @author Chair of Electronic Design Automation, TUM
+        @author Marc Greim <marc.greim@mytum.de>, Chair of Electronic Design Automation, TUM
+
+        @date July 28, 2014
 
         @version 0.1
 
 */
+/**
+        @file
 
-#define ETISS_LIBNAME LLVMJIT
-#include "etiss/helper/JITLibrary.h"
+        @brief contains general definitions needed for library function definitions. Doesn't need to be included by
+   user.
+
+        @see PluginLibrary.h
+        @see JITLibrary.h
+        @see CPUArchLibrary.h
+
+        @detail
 
 
-#include "LLVMJIT.h"
 
-#include <iostream>
 
-// implement etiss library interface
+*/
+#ifndef ETISS_INCLUDE_HELPER_MISC_H_
+#define ETISS_INCLUDE_HELPER_MISC_H_
+
+#include "etiss/pluginexport.h"
+#include <map>
+#include <string>
+
+#include "etiss/config.h"
+
+#define etiss_helper_merge_l2(X1, X2) X1##X2
+#define etiss_helper_merge(X1, X2) etiss_helper_merge_l2(X1, X2)
+
 extern "C"
 {
 
-    const char *LLVMJIT_versionInfo() { return "3.4.2for0.4"; }
+    /**
+             must be implemented like this:
 
-    // implement version function
-    ETISS_LIBRARYIF_VERSION_FUNC_IMPL
+                    #include "helper/Misc.h"
+                    ETISS_LIBRARYIF_VERSION_FUNC_IMPL
 
-    unsigned LLVMJIT_countJIT() { return 1; }
-    const char *LLVMJIT_nameJIT(unsigned index)
-    {
-        switch (index)
-        {
-        case 0:
-            return "LLVMJIT";
-        default:
-            return 0;
-        }
-    }
-    etiss::JIT *LLVMJIT_createJIT(unsigned index, std::map<std::string, std::string> options)
-    {
-        switch (index)
-        {
-        case 0:
-            return new etiss::LLVMJIT();
-        default:
-            return 0;
-        }
-    }
-
-    void LLVMJIT_deleteJIT(etiss::JIT *o) { delete o; }
+    */
+    ETISS_PLUGIN_EXPORT unsigned etiss_helper_merge(ETISS_LIBNAME, _etissversion)();
 }
+
+#define ETISS_LIBRARYIF_VERSION_FUNC_IMPL                                           \
+    ETISS_PLUGIN_EXPORT unsigned etiss_helper_merge(ETISS_LIBNAME, _etissversion)() \
+    {                                                                               \
+        return (ETISS_VERSION_MAJOR << 16) + (ETISS_VERSION_MINOR);                 \
+    }
+
+#endif

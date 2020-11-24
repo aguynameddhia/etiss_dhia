@@ -40,44 +40,49 @@
 
 */
 
-#define ETISS_LIBNAME LLVMJIT
-#include "etiss/helper/JITLibrary.h"
+#ifndef ETISS_PLUGIN_LOGGER_H_
+#define ETISS_PLUGIN_LOGGER_H_
 
+#include "etiss/Plugin.h"
 
-#include "LLVMJIT.h"
-
-#include <iostream>
-
-// implement etiss library interface
-extern "C"
+namespace etiss
 {
 
-    const char *LLVMJIT_versionInfo() { return "3.4.2for0.4"; }
+namespace plugin
+{
 
-    // implement version function
-    ETISS_LIBRARYIF_VERSION_FUNC_IMPL
+/**
+        simple logger implementation.
+        by overriding log it would also be possible to use this as a device mounted to a certain memory address. due to
+   the function call overhead this is only suggested for testing purposes
+*/
+class Logger : public etiss::SystemWrapperPlugin
+{
+  public:
+    Logger(uint64_t addr_value, uint64_t addr_mask);
 
-    unsigned LLVMJIT_countJIT() { return 1; }
-    const char *LLVMJIT_nameJIT(unsigned index)
-    {
-        switch (index)
-        {
-        case 0:
-            return "LLVMJIT";
-        default:
-            return 0;
-        }
-    }
-    etiss::JIT *LLVMJIT_createJIT(unsigned index, std::map<std::string, std::string> options)
-    {
-        switch (index)
-        {
-        case 0:
-            return new etiss::LLVMJIT();
-        default:
-            return 0;
-        }
-    }
+    virtual ETISS_System *wrap(ETISS_CPU *cpu, ETISS_System *system); // wrap read/write redirection
 
-    void LLVMJIT_deleteJIT(etiss::JIT *o) { delete o; }
-}
+    virtual ETISS_System *unwrap(ETISS_CPU *cpu, ETISS_System *system); // undo wrapping
+
+    /** @brief this function writes the content of buf with length len to std::cout.
+     *        It is called by write functions if the write address is the specified
+     *        logger address.
+     * @attention if called by iread then the buf pointer is NULL
+     */
+    virtual int32_t log(bool isread, uint64_t local_addr, uint8_t *buf,
+                        unsigned len); // called whenever a write(or read) occured to logger address
+
+  protected:
+    inline virtual std::string _getPluginName() const { return std::string("Logger @") + etiss::toString(addr); }
+
+  private:
+    uint64_t addr;
+    uint64_t mask;
+};
+
+} // namespace plugin
+
+} // namespace etiss
+
+#endif

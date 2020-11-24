@@ -40,44 +40,70 @@
 
 */
 
-#define ETISS_LIBNAME LLVMJIT
-#include "etiss/helper/JITLibrary.h"
+#ifndef ETISS_BENCHMARK_H
+#define ETISS_BENCHMARK_H
 
+#include "etiss/Misc.h"
 
-#include "LLVMJIT.h"
+#include <cmath>
+#include <ctime>
+#include <list>
 
-#include <iostream>
-
-// implement etiss library interface
-extern "C"
+namespace etiss
 {
 
-    const char *LLVMJIT_versionInfo() { return "3.4.2for0.4"; }
+struct Default_Clock
+{
+    double operator()() { return (clock() / (double)CLOCKS_PER_SEC) * 1000000000.0; }
+};
 
-    // implement version function
-    ETISS_LIBRARYIF_VERSION_FUNC_IMPL
-
-    unsigned LLVMJIT_countJIT() { return 1; }
-    const char *LLVMJIT_nameJIT(unsigned index)
-    {
-        switch (index)
-        {
-        case 0:
-            return "LLVMJIT";
-        default:
-            return 0;
-        }
-    }
-    etiss::JIT *LLVMJIT_createJIT(unsigned index, std::map<std::string, std::string> options)
-    {
-        switch (index)
-        {
-        case 0:
-            return new etiss::LLVMJIT();
-        default:
-            return 0;
-        }
-    }
-
-    void LLVMJIT_deleteJIT(etiss::JIT *o) { delete o; }
+namespace benchmark
+{
+double averageTime(const std::list<std::pair<double, double>> &vals);
 }
+
+template <typename clock_ = Default_Clock>
+class Benchmark : public etiss::ToString
+{
+  public:
+    clock_ clock_inst;
+    const std::string name_;
+    Benchmark(const std::string &name) : name_(name), state(false) {}
+    void start()
+    {
+#if DEBUG
+        if (unlikely(state != false))
+            throw "benchmark not stopped before calling start";
+#endif
+        state = true;
+        cur.first = clock_inst();
+    }
+    void stop(size_t interval_count = 1)
+    {
+#if DEBUG
+        if (unlikely(state != true))
+            throw "benchmark not started before calling start";
+#endif
+        state = false;
+        cur.second = clock_inst();
+        interval_ns.push_back(cur);
+    }
+    std::list<std::pair<double, double>> interval_ns;
+    std::string toString() const
+    {
+        std::stringstream ss;
+        ss << name_ << " { average=" << etiss::benchmark::averageTime(interval_ns)
+           << "ns samples=" << interval_ns.size() << "}";
+        return ss.str();
+    }
+
+  private:
+    std::pair<double, double> cur;
+    bool state;
+
+  public:
+};
+
+} // namespace etiss
+
+#endif // ETISS_BENCHMARK_H

@@ -1,4 +1,4 @@
-/*
+/**
 
         @copyright
 
@@ -34,50 +34,71 @@
 
         </pre>
 
-        @author Chair of Electronic Design Automation, TUM
+        @author Marc Greim <marc.greim@mytum.de>, Chair of Electronic Design Automation, TUM
 
-        @version 0.1
+	@date December 16, 2014
+
+	@version 0.4
 
 */
+/**
+	@file config.h
 
-#define ETISS_LIBNAME LLVMJIT
-#include "etiss/helper/JITLibrary.h"
+	@brief contains defines to configure ETISS. this file is generated from config.h.in and may not be modified manually. if changes are needed apply them to config.h.in
+
+	@detail
+
+*/
+/**
+	@file config.h.in
+
+	@brief template of config.h for autoconf. run ./configure in the ETISS root folder to regenerate config.h if changes have been made
+
+	@detail
+
+*/
+#ifndef ETISS_CONFIG_H_
+#define ETISS_CONFIG_H_
+
+#define ETISS_VERSION_MAJOR @ETISS_VERSION_MAJOR@
+#define ETISS_VERSION_MINOR @ETISS_VERSION_MINOR@
+#define ETISS_VERSION_PATCH @ETISS_VERSION_PATCH@
+
+#define ETISS_VERSION_FULL "@ETISS_VERSION_FULL@"
+
+#define ETISS_VERSION_INTERFACE "@ETISS_VERSION_INTERFACE@"
 
 
-#include "LLVMJIT.h"
+#cmakedefine01 ETISS_USE_PYTHON
 
-#include <iostream>
+#cmakedefine01 ETISS_USE_DLSYM
 
-// implement etiss library interface
-extern "C"
-{
+#cmakedefine01 ETISS_USE_DLADDR
 
-    const char *LLVMJIT_versionInfo() { return "3.4.2for0.4"; }
+#cmakedefine01 ETISS_USE_GETPROC
 
-    // implement version function
-    ETISS_LIBRARYIF_VERSION_FUNC_IMPL
+#define ETISS_USE_LINUX_MKDIR ETISS_USE_DLSYM //TODO propper mkdir checks
 
-    unsigned LLVMJIT_countJIT() { return 1; }
-    const char *LLVMJIT_nameJIT(unsigned index)
-    {
-        switch (index)
-        {
-        case 0:
-            return "LLVMJIT";
-        default:
-            return 0;
-        }
-    }
-    etiss::JIT *LLVMJIT_createJIT(unsigned index, std::map<std::string, std::string> options)
-    {
-        switch (index)
-        {
-        case 0:
-            return new etiss::LLVMJIT();
-        default:
-            return 0;
-        }
-    }
+#cmakedefine01 ETISS_USE_DLSYM_DEEPBIND
 
-    void LLVMJIT_deleteJIT(etiss::JIT *o) { delete o; }
-}
+#cmakedefine01 ETISS_USE_POSIX_SOCKET
+
+#define ETISS_INSTALL_DIR "@CMAKE_INSTALL_PREFIX@"
+
+#cmakedefine01 ETISS_USE_CONSTEXPR
+
+#if ETISS_USE_CONSTEXPR
+#define CONSTEXPR constexpr
+#else
+#define CONSTEXPR inline
+#endif
+
+#define ETISS_LITTLE_ENDIAN 0x00000001
+#define ETISS_BIG_ENDIAN 0x01000000
+#define ETISS_UNKNOWN_ENDIAN 0xFFFFFFFF
+
+#define ETISS_ENDIANNESS @C_ETISS_ENDIANNESS@
+
+#cmakedefine01 ETISS_USE_BYTESWAP_H
+
+#endif //ETISS_CONFIG_H_
